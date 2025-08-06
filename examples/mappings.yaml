@@ -1,0 +1,134 @@
+# CELScanner Plugin Mapping Configuration
+# Maps OSCAL RuleSets and Checks to CEL Rules
+
+version: "1.0"
+
+# Mapping from RuleSet/Check IDs to CEL Rule IDs or inline definitions
+mappings:
+  # System service checks - map to stored rule IDs
+  sshd-service:
+    type: stored_rules  # Reference stored CEL rules
+    rule_ids:
+      - sshd-service-enabled
+      - sshd-service-running
+    description: "SSH daemon service compliance checks"
+
+  firewall-service:
+    type: stored_rules
+    rule_ids:
+      - firewalld-enabled
+      - firewalld-running
+    description: "Firewall service compliance checks"
+
+  selinux-compliance:
+    type: stored_rules
+    rule_ids:
+      - selinux-enforcing
+    description: "SELinux enforcement status check"
+
+  # Kubernetes security checks - inline CEL expressions
+  pod-security:
+    type: inline
+    rules:
+      - id: pod-security-context
+        expression: "has(resource.spec.securityContext) && has(resource.spec.securityContext.runAsNonRoot) && resource.spec.securityContext.runAsNonRoot == true"
+        inputs:
+          - name: resource
+            type: kubernetes
+            resource: pods
+      - id: pod-security-privileged
+        expression: "!resource.spec.containers.exists(c, has(c.securityContext) && has(c.securityContext.privileged) && c.securityContext.privileged == true)"
+        inputs:
+          - name: resource
+            type: kubernetes
+            resource: pods
+    description: "Pod security compliance checks"
+
+  container-resources:
+    type: inline
+    rules:
+      - id: container-cpu-limits
+        expression: "resource.spec.containers.all(c, has(c.resources) && has(c.resources.limits) && has(c.resources.limits.cpu))"
+        inputs:
+          - name: resource
+            type: kubernetes
+            resource: pods
+      - id: container-memory-limits
+        expression: "resource.spec.containers.all(c, has(c.resources) && has(c.resources.limits) && has(c.resources.limits.memory))"
+        inputs:
+          - name: resource
+            type: kubernetes
+            resource: pods
+    description: "Container resource management checks"
+
+  # File configuration checks
+  ssh-config:
+    type: inline
+    rules:
+      - id: ssh-root-login
+        expression: 'config.content.contains("PermitRootLogin no")'
+        inputs:
+          - name: config
+            type: file
+            path: /etc/ssh/sshd_config
+      - id: ssh-password-auth
+        expression: 'config.content.contains("PasswordAuthentication no")'
+        inputs:
+          - name: config
+            type: file
+            path: /etc/ssh/sshd_config
+    description: "SSH configuration security checks"
+
+  # Network security checks
+  network-policies:
+    type: inline
+    rules:
+      - id: namespace-network-policy
+        expression: "resource.items.size() > 0"
+        inputs:
+          - name: resource
+            type: kubernetes
+            resource: networkpolicies
+            namespace: "${namespace}"
+    description: "Network policy compliance checks"
+
+# Parameters that can be used in expressions
+parameters:
+  namespace:
+    default: "default"
+    description: "Target namespace for Kubernetes checks"
+  min_replicas:
+    default: "2"
+    description: "Minimum number of replicas for HA"
+  max_cpu_limit:
+    default: "1000m"
+    description: "Maximum CPU limit for containers"
+  max_memory_limit:
+    default: "1Gi"
+    description: "Maximum memory limit for containers"
+
+# Rule templates for common patterns
+templates:
+  service-check:
+    enabled:
+      expression: 'service.success && contains(service.output, "enabled")'
+      inputs:
+        - name: service
+          type: system
+          command: systemctl
+          args: ["is-enabled", "${service_name}"]
+    running:
+      expression: 'service.success && contains(service.output, "active")'
+      inputs:
+        - name: service
+          type: system
+          command: systemctl
+          args: ["is-active", "${service_name}"]
+
+# Severity mappings for different check types
+severity_mappings:
+  security: HIGH
+  compliance: CRITICAL
+  performance: MEDIUM
+  availability: HIGH
+  governance: LOW

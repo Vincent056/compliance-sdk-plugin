@@ -1,0 +1,77 @@
+# Example manifest file for CELScanner Plugin
+assessment-plan: assessment-plan.json
+assessment-results: assessment-results.json
+
+# Plugin configuration
+plugins:
+  - name: celscanner-plugin
+    path: /path/to/celscanner-plugin # Optional, uses PATH by default
+    
+    config:
+      # Workspace configuration
+      workspace: ./workspace
+      
+      # Target information
+      target_name: "production-k8s-cluster"
+      target_type: "kubernetes-cluster"
+      target_id: "cluster-prod-001"
+      namespace: "default,kube-system,production"
+      
+      # File paths (optional - defaults will be used if not specified)
+      mapping_file: "examples/mappings.json"
+      rules_file: "cel-rules.json"
+      results_file: "cel-results.json"
+      
+      # Feature flags
+      enable_kubernetes: true
+      enable_filesystem: true
+      enable_http: false
+      enable_system: true
+      
+      # CEL RPC Server configuration (optional)
+      use_rpc_server: false
+      cel_server_address: "localhost:50051"
+      cel_server_timeout: 30
+      cel_server_use_tls: false
+      # cel_server_cert_file: "/path/to/cert.pem"
+      # cel_server_key_file: "/path/to/key.pem"
+      
+      # Scanner configuration
+      enable_debug_logging: false
+      include_namespaces: "default,production"
+      exclude_namespaces: "kube-system,kube-public"
+      resource_types: "pods,deployments,services,configmaps,secrets"
+      
+      # Profile selection (maps to OSCAL framework ID)
+      profile: "nist-800-53-high"
+
+# Example of multiple plugins working together
+# plugins:
+#   - name: celscanner-plugin
+#     config:
+#       enable_kubernetes: true
+#       target_type: "kubernetes-cluster"
+#   
+#   - name: openscap-plugin
+#     config:
+#       datastream: "/usr/share/xml/scap/ssg/content/ssg-rhel8-ds.xml"
+#       profile: "xccdf_org.ssgproject.content_profile_stig"
+
+# Environment-specific overrides
+environments:
+  development:
+    plugins:
+      - name: celscanner-plugin
+        config:
+          target_name: "dev-cluster"
+          enable_debug_logging: true
+          include_namespaces: "dev,test"
+  
+  production:
+    plugins:
+      - name: celscanner-plugin
+        config:
+          target_name: "prod-cluster"
+          use_rpc_server: true
+          cel_server_address: "cel-rpc-server.compliance-system:50051"
+          cel_server_use_tls: true

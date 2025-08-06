@@ -1,0 +1,17 @@
+- id: pod-security-context
+  celexpr: has(resource.spec.securityContext)
+  ruleinputs:
+    - inputname: resource
+      inputtype: kubernetes
+      inputspec:
+        group: ""
+        ver: v1
+        restype: pods
+        ns: ""
+        resname: ""
+  rulemetadata:
+    name: pod-security-context
+    description: Check pod security context
+    extensions:
+        check_id: pod-security-context
+        oscal_rule_id: test-rule-1

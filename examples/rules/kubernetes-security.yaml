@@ -1,0 +1,102 @@
+version: "1.0"
+rules:
+  - id: pod-security-context
+    name: Pod Security Context Check
+    description: Ensures pods have a security context defined with proper restrictions
+    expression: 'has(resource.spec.securityContext) && has(resource.spec.securityContext.runAsNonRoot) && resource.spec.securityContext.runAsNonRoot == true'
+    inputs:
+      - name: resource
+        type: kubernetes
+        resource: pods
+    tags:
+      - security
+      - kubernetes
+      - pod-security
+    category: kubernetes-security
+    severity: HIGH
+    extensions:
+      compliance_framework: "NIST-800-53"
+      control_id: "AC-6"
+      remediation: "Add securityContext with runAsNonRoot: true to pod spec"
+    check_id: pod-security-context
+
+  - id: container-resource-limits
+    name: Container Resource Limits Check
+    description: Validates all containers have CPU and memory resource limits defined
+    expression: 'resource.spec.containers.all(c, has(c.resources) && has(c.resources.limits) && has(c.resources.limits.memory) && has(c.resources.limits.cpu))'
+    inputs:
+      - name: resource
+        type: kubernetes
+        resource: pods
+    tags:
+      - resource-management
+      - kubernetes
+      - stability
+    category: kubernetes-resources
+    severity: MEDIUM
+    extensions:
+      compliance_framework: "CIS-Kubernetes"
+      control_id: "5.1.3"
+      remediation: "Set resource limits for all containers"
+    check_id: resource-limits
+
+  - id: no-privileged-containers
+    name: Privileged Container Check
+    description: Ensures no containers are running in privileged mode
+    expression: '!resource.spec.containers.exists(c, has(c.securityContext) && has(c.securityContext.privileged) && c.securityContext.privileged == true)'
+    inputs:
+      - name: resource
+        type: kubernetes
+        resource: pods
+    tags:
+      - security
+      - kubernetes
+      - container-security
+    category: kubernetes-security
+    severity: CRITICAL
+    extensions:
+      compliance_framework: "CIS-Kubernetes"
+      control_id: "5.2.1"
+      remediation: "Set privileged: false or remove privileged field from container securityContext"
+    check_id: privileged-containers
+
+  - id: deployment-replicas
+    name: Deployment High Availability Check
+    description: Ensures deployments have sufficient replicas for high availability
+    expression: 'resource.spec.replicas >= 3'
+    inputs:
+      - name: resource
+        type: kubernetes
+        resource: deployments
+    tags:
+      - availability
+      - kubernetes
+      - production-readiness
+    category: kubernetes-availability
+    severity: MEDIUM
+    extensions:
+      min_replicas: 3
+      remediation: "Increase deployment replicas to at least 3 for production workloads"
+    check_id: deployment-replicas
+
+  - id: namespace-labels
+    name: Namespace Environment Label Check
+    description: Validates namespaces have proper environment labels
+    expression: 'has(resource.metadata.labels.environment) && resource.metadata.labels.environment in ["dev", "staging", "prod"]'
+    inputs:
+      - name: resource
+        type: kubernetes
+        resource: namespaces
+    tags:
+      - governance
+      - kubernetes
+      - labeling
+    category: kubernetes-governance
+    severity: LOW
+    extensions:
+      required_label: environment
+      valid_values: ["dev", "staging", "prod"]
+      remediation: "Add environment label to namespace with appropriate value"
+    check_id: namespace-labels
+
+exported: 2024-12-13T10:00:00Z

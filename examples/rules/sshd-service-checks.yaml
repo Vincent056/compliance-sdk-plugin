@@ -1,0 +1,116 @@
+version: "1.0"
+rules:
+  - id: sshd-service-enabled
+    name: SSH Daemon Service Enabled Check
+    description: Ensures SSH daemon service is enabled to start at boot
+    expression: 'service.success && contains(service.output, "enabled")'
+    inputs:
+      - name: service
+        type: system
+        command: systemctl
+        args:
+          - is-enabled
+          - sshd
+    tags:
+      - security
+      - compliance
+      - ssh
+    category: system-services
+    severity: HIGH
+    extensions:
+      compliance_framework: CIS
+      control_id: "5.2.1"
+      remediation: "Run 'sudo systemctl enable sshd' to enable SSH service"
+    check_id: sshd-service-enabled
+
+  - id: sshd-service-running
+    name: SSH Daemon Service Running Check
+    description: Verifies SSH daemon service is currently active and running
+    expression: 'service.success && contains(service.output, "active")'
+    inputs:
+      - name: service
+        type: system
+        command: systemctl
+        args:
+          - is-active
+          - sshd
+    tags:
+      - security
+      - compliance
+      - ssh
+    category: system-services
+    severity: CRITICAL
+    extensions:
+      compliance_framework: CIS
+      control_id: "5.2.1"
+      remediation: "Run 'sudo systemctl start sshd' to start SSH service"
+    check_id: sshd-service-running
+
+  - id: firewalld-enabled
+    name: Firewall Service Enabled Check
+    description: Ensures firewall service is enabled to start at boot
+    expression: 'service.success && contains(service.output, "enabled")'
+    inputs:
+      - name: service
+        type: system
+        command: systemctl
+        args:
+          - is-enabled
+          - firewalld
+    tags:
+      - security
+      - compliance
+      - firewall
+    category: system-services
+    severity: HIGH
+    extensions:
+      compliance_framework: CIS
+      control_id: "3.4.1"
+      remediation: "Run 'sudo systemctl enable firewalld' to enable firewall service"
+    check_id: firewalld-enabled
+
+  - id: firewalld-running
+    name: Firewall Service Running Check
+    description: Verifies firewall service is currently active and running
+    expression: 'service.success && contains(service.output, "active")'
+    inputs:
+      - name: service
+        type: system
+        command: systemctl
+        args:
+          - is-active
+          - firewalld
+    tags:
+      - security
+      - compliance
+      - firewall
+    category: system-services
+    severity: CRITICAL
+    extensions:
+      compliance_framework: CIS
+      control_id: "3.4.1"
+      remediation: "Run 'sudo systemctl start firewalld' to start firewall service"
+    check_id: firewalld-running
+
+  - id: selinux-enforcing
+    name: SELinux Enforcement Mode Check
+    description: Ensures SELinux is in enforcing mode for mandatory access control
+    expression: 'selinux.success && contains(selinux.output, "Enforcing")'
+    inputs:
+      - name: selinux
+        type: system
+        command: getenforce
+        args: []
+    tags:
+      - security
+      - compliance
+      - selinux
+    category: system-security
+    severity: CRITICAL
+    extensions:
+      compliance_framework: CIS
+      control_id: "1.6.1"
+      remediation: "Run 'sudo setenforce 1' to enable SELinux enforcing mode"
+    check_id: selinux-enforcing
+
+exported: 2024-12-13T10:00:00Z
